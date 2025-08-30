@@ -30,14 +30,14 @@
 ```bash
 └── 📁stoock_notifier
         └── 📁src
-        └── 📁app
-            ├── __init__.py
-            ├── config.py
-            ├── core.py
-            ├── logging_setup.py
-            ├── market.py
-            ├── ntfy.py
-            ├── state.py
+            └── 📁app
+                ├── __init__.py
+                ├── config.py
+                ├── core.py
+                ├── logging_setup.py
+                ├── market.py
+                ├── ntfy.py
+                ├── state.py
     ├── .env
     ├── .gitignore
     ├── config.json
