@@ -5,6 +5,14 @@
 > If a price moves more than a defined percentage from the daily opening price, you receive a push notification on your phone via ntfy.sh.
 > Optionally, the alert also includes latest news headlines about the company or ETF.
 
+**Example output on desktop (web):**
+
+<img src="src/img/web_example_output.png" alt="Image of app" width=50%>
+
+**Example output on mobile device (app):**
+
+<img src="src/img/mobile_example_output.jpg" alt="Image of app" width=40%>
+
 ---
 
 ## 🚀 Features
