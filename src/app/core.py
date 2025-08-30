@@ -4,8 +4,10 @@ from zoneinfo import ZoneInfo
 import logging
 from pathlib import Path
 from typing import Dict, List
-from .news import fetch_headlines
+from urllib.parse import urlparse, parse_qs
+import requests
 
+from .news import fetch_headlines
 from .market import get_open_and_last
 from .ntfy import notify_ntfy
 from .state import load_state, save_state
@@ -18,15 +20,69 @@ def _ticker_to_query(ticker: str, override_name: str | None = None) -> str:
     # ganz simpel: nutze override_name oder Fallback = Ticker
     return override_name or ticker
 
+def _ensure_https(u: str) -> str:
+    if not u:
+        return u
+    if u.startswith("http://") or u.startswith("https://"):
+        return u
+    return "https://" + u
+
+def _extract_original_url(link: str, *, resolve_redirects: bool = True, timeout: float = 3.0) -> str:
+    """Versucht aus Google-News-Links die Original-URL zu holen.
+    - 1) ?url=... Parameter (falls vorhanden)
+    - 2) Optional: Redirect auflösen (HEAD, bei Bedarf GET)
+    - 3) Fallback: ursprünglicher Link
+    """
+    try:
+        link = _ensure_https(link)
+        p = urlparse(link)
+        if "news.google.com" in p.netloc:
+            qs = parse_qs(p.query)
+            if "url" in qs and qs["url"]:
+                return _ensure_https(qs["url"][0])
+
+            if resolve_redirects:
+                try:
+                    # HEAD spart Daten; manche Server erlauben nur GET
+                    r = requests.head(link, allow_redirects=True, timeout=timeout)
+                    if r.url and r.url != link:
+                        return _ensure_https(r.url)
+                    if r.status_code in (403, 405):  # Not allowed? versuche GET
+                        g = requests.get(link, allow_redirects=True, timeout=timeout, stream=True)
+                        if g.url and g.url != link:
+                            return _ensure_https(g.url)
+                except requests.RequestException:
+                    pass
+        return link
+    except Exception:
+        return link
+
 def _format_headlines(items) -> str:
-    # einzeilig, kurz; ntfy-Nachrichten sollen kompakt bleiben
-    if not items: 
+    """Markdown: kompakt (Titel + Quelle + kurzer Linktext)."""
+    if not items:
         return ""
     lines = []
     for it in items:
-        src = f" — {it['source']}" if it.get("source") else ""
-        lines.append(f"• {it['title']}{src}")
+        title = (it.get("title") or "").strip()
+        src   = f" — {it['source']}" if it.get("source") else ""
+        link  = (it.get("link") or "").strip()
+        if link:
+            orig = _extract_original_url(link)
+            dom  = _domain(orig)
+            # Markdown-Link mit kurzem Text (Domain), klickt aber auf die volle URL:
+            lines.append(f"• {title}{src}\n   🔗 [{dom}]({orig})")
+        else:
+            lines.append(f"• {title}{src}")
     return "\n".join(lines)
+
+def _domain(url: str) -> str:
+    try:
+        d = urlparse(url).netloc
+        return d[4:] if d.startswith("www.") else d
+    except Exception:
+        return url
+    
+
 
 def now_tz(tz: str) -> dt.datetime:
     return dt.datetime.now(ZoneInfo(tz))
@@ -115,7 +171,12 @@ def run_once(
                         headlines_block = "\n\n📰 News:\n" + news_text
 
                 msg = body + headlines_block
-                notify_ntfy(ntfy_server, ntfy_topic, title, msg, dry_run=test_cfg.get("dry_run", False))
+                notify_ntfy(
+                    ntfy_server, ntfy_topic, title, msg,
+                    dry_run=test_cfg.get("dry_run", False),
+                    markdown=True,                       
+                    click_url=None                         
+                )
                 state[tk] = direction
                 save_state(state_file, state)
 
