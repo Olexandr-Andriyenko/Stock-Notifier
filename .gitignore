@@ -45,3 +45,4 @@ pytest_cache/
 .pytest_cache/
 htmlcov/
 .cache/
+company_cache.json

@@ -1,28 +1,8 @@
-# src/app/ntfy.py
 import requests
 import logging
+from src.app.utils import mask_secret
 
 logger = logging.getLogger("stock-alerts")
-
-
-def _mask(s: str, keep: int = 1) -> str:
-    """
-    Mask a secret string (e.g. ntfy topic) for logging purposes.
-
-    Args:
-        s (str): The string to mask.
-        keep (int): Number of characters to keep at both ends.
-
-    Returns:
-        str: Masked string (example: "a…Z").
-
-    Example:
-        _mask("7gl6J6Ok0KEzOMwT", keep=2) -> "7g…wT"
-    """
-    if not s:
-        return "(unset)"
-    return s[:keep] + "…" + s[-keep:] if len(s) > keep * 2 else s[0] + "…" + s[-1]
-
 
 def notify_ntfy(
     server: str,
@@ -89,7 +69,7 @@ def notify_ntfy(
         headers["Click"] = click_url
 
     try:
-        logger.info("Sending ntfy: title='%s', topic(masked)='%s'", title, _mask(topic))
+        logger.info("Sending ntfy: title='%s', topic(masked)='%s'", title, mask_secret(topic))
         r = requests.post(url, data=message.encode("utf-8"), headers=headers, timeout=20)
         r.raise_for_status()
         logger.debug("ntfy Response: %s", r.status_code)

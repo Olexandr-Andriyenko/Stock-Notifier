@@ -59,15 +59,10 @@ def _strip_legal_suffixes(name: str) -> str:
         "Apple Inc." -> "Apple"
         "SAP SE" -> "SAP"
     """
-    parts = [p.strip(",. ").lower() for p in name.split()]
-    while parts and parts[-1] in LEGAL_SUFFIXES:
+    parts = [p.strip(",. ") for p in name.split()]
+    while parts and parts[-1].lower() in LEGAL_SUFFIXES:
         parts.pop()
-
-    if not parts:
-        return name.strip()
-
-    cleaned = " ".join(parts)
-    return cleaned.title()
+    return " ".join(parts) if parts else name.strip()
 
 
 def _base_ticker(symbol: str) -> str:

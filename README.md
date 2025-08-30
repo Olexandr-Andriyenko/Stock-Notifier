@@ -44,7 +44,7 @@
 ## 🗂 Project Structure
 
 ```bash
-└── 📁stoock_notifier
+└── 📁stock_notifier
         └── 📁src
             └── 📁app
                 ├── __init__.py
