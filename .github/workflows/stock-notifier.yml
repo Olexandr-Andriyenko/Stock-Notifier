@@ -35,7 +35,7 @@ jobs:
           restore-keys: |
             alert-state-
 
-      - name: ENVIROMENT_VARIABLES
+      - name: Run notifier
         env:
           NTFY_SERVER: https://ntfy.sh
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
