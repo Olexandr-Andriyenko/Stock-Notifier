@@ -1,4 +1,3 @@
-# src/app/logging_setup.py
 import logging
 from logging.handlers import RotatingFileHandler
 from typing import Dict, Any

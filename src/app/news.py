@@ -1,4 +1,3 @@
-# src/app/news.py
 from __future__ import annotations
 import datetime as dt
 from typing import List, Dict, Iterable

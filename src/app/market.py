@@ -1,4 +1,3 @@
-# src/app/market.py
 import time
 import yfinance as yf
 import logging
