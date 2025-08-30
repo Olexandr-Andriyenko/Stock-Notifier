@@ -4,12 +4,27 @@ from zoneinfo import ZoneInfo
 import logging
 from pathlib import Path
 from typing import Dict, List
+from .news import fetch_headlines
 
 from .market import get_open_and_last
 from .ntfy import notify_ntfy
 from .state import load_state, save_state
 
 logger = logging.getLogger("stock-alerts")
+
+def _ticker_to_query(ticker: str, override_name: str | None = None) -> str:
+    # ganz simpel: nutze override_name oder Fallback = Ticker
+    return override_name or ticker
+
+def _format_headlines(items) -> str:
+    # einzeilig, kurz; ntfy-Nachrichten sollen kompakt bleiben
+    if not items: 
+        return ""
+    lines = []
+    for it in items:
+        src = f" — {it['source']}" if it.get("source") else ""
+        lines.append(f"• {it['title']}{src}")
+    return "\n".join(lines)
 
 def now_tz(tz: str) -> dt.datetime:
     return dt.datetime.now(ZoneInfo(tz))
@@ -30,6 +45,7 @@ def run_once(
     state_file: Path,
     market_hours_cfg: dict,
     test_cfg: dict,
+    news_cfg: dict,
 ) -> None:
     """Ein Lauf: prüft alle Ticker, sendet ggf. ntfy, pflegt State."""
     start_ts = now_tz(market_hours_cfg["tz"]).strftime("%Y-%m-%d %H:%M:%S")
@@ -66,8 +82,23 @@ def run_once(
             if direction != "none" and direction != prev:
                 arrow = "📈" if direction == "up" else "📉"
                 title = f"Stock Alert: {tk}"
-                msg = f"{arrow} {tk}: {pct:+.2f}% vs. Eröffnung\nAktuell: {last_px:.2f} | Open: {open_px:.2f}"
-                logger.info("State-Wechsel (%s): %s → %s. Sende Alert.", tk, prev, direction)
+                body = f"{arrow} {tk}: {pct:+.2f}% vs. Open\nAktuell: {last_px:.2f} | Open: {open_px:.2f}"
+
+                headlines_block = ""
+                if news_cfg.get("enabled", False):
+                    query = _ticker_to_query(tk)
+                    items = fetch_headlines(
+                        query=query,
+                        limit=int(news_cfg.get("limit", 2)),
+                        lookback_hours=int(news_cfg.get("lookback_hours", 12)),
+                        lang=news_cfg.get("lang", "de"),
+                        country=news_cfg.get("country", "DE"),
+                    )
+                    news_text = _format_headlines(items)
+                    if news_text:
+                        headlines_block = "\n\n📰 News:\n" + news_text
+
+                msg = body + headlines_block
                 notify_ntfy(ntfy_server, ntfy_topic, title, msg, dry_run=test_cfg.get("dry_run", False))
                 state[tk] = direction
                 save_state(state_file, state)
@@ -85,3 +116,4 @@ def run_once(
 
         except Exception as e:
             logger.error("Fehler bei Verarbeitung von %s: %s", tk, e)
+
