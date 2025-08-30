@@ -4,6 +4,23 @@ import datetime as dt
 from typing import List, Dict
 from urllib.parse import quote_plus
 import feedparser
+from typing import Iterable
+
+def build_query(name: str, ticker: str) -> str:
+    # exakter Name ODER Ticker + Finanzkontext
+    # z. B. ("Apple" OR AAPL) (stock OR aktie OR börse)
+    return f'("{name}" OR {ticker}) (stock OR aktie OR börse)'
+
+def filter_titles(items, required_keywords: Iterable[str] = ()):
+    if not required_keywords:
+        return items
+    out = []
+    req = [k.lower() for k in required_keywords if k]
+    for it in items:
+        title = (it.get("title") or "").lower()
+        if any(k in title for k in req):
+            out.append(it)
+    return out
 
 def _google_news_rss_url(query: str, lang: str = "de", country: str = "DE") -> str:
     # "when:12h" begrenzt auf letzte 12h; anpassbar im Code

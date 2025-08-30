@@ -9,6 +9,8 @@ from .news import fetch_headlines
 from .market import get_open_and_last
 from .ntfy import notify_ntfy
 from .state import load_state, save_state
+from .company import auto_keywords
+from .news import fetch_headlines, build_query, filter_titles
 
 logger = logging.getLogger("stock-alerts")
 
@@ -86,15 +88,29 @@ def run_once(
 
                 headlines_block = ""
                 if news_cfg.get("enabled", False):
-                    query = _ticker_to_query(tk)
+                    company_name, req_kw = auto_keywords(tk)
+                    q = build_query(company_name, tk)
                     items = fetch_headlines(
-                        query=query,
+                        query=q,
                         limit=int(news_cfg.get("limit", 2)),
                         lookback_hours=int(news_cfg.get("lookback_hours", 12)),
                         lang=news_cfg.get("lang", "de"),
                         country=news_cfg.get("country", "DE"),
                     )
+                    items = filter_titles(items, required_keywords=req_kw)
                     news_text = _format_headlines(items)
+                    if not news_text:
+                        # Fallback: eng/US nochmal probieren
+                        items = fetch_headlines(
+                            query=q,
+                            limit=int(news_cfg.get("limit", 2)),
+                            lookback_hours=max(12, int(news_cfg.get("lookback_hours", 12))),
+                            lang=news_cfg.get("fallback_lang", "en"),
+                            country=news_cfg.get("fallback_country", "US"),
+                        )
+                        items = filter_titles(items, required_keywords=req_kw)
+                        news_text = _format_headlines(items)
+
                     if news_text:
                         headlines_block = "\n\n📰 News:\n" + news_text
 

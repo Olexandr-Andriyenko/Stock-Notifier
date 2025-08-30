@@ -1,0 +1,14 @@
+{
+  "AAPL": {
+    "name": "Apple",
+    "raw_name": "Apple Inc.",
+    "source": "info.longName",
+    "base_ticker": "AAPL"
+  },
+  "SAP.DE": {
+    "name": "Sap",
+    "raw_name": "SAP SE",
+    "source": "info.longName",
+    "base_ticker": "SAP"
+  }
+}
