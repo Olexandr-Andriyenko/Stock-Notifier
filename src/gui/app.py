@@ -5,8 +5,10 @@ import streamlit as st
 import os, subprocess
 from dotenv import load_dotenv
 
-load_dotenv()
 CONFIG_PATH = Path("config.json")
+
+# Load environment variables from a local .env if present
+load_dotenv()
 
 @st.cache_data
 def load_config():
@@ -29,11 +31,28 @@ def commit_and_push(token: str | None = None) -> bool:
     remote = f"https://{token}@github.com/Olexandr-Andriyenko/Stock-Notifier.git"
 
     try:
+        # Ensure git has a user identity (necessary in ephemeral cloud runners)
+        subprocess.run(["git", "config", "user.email", "streamlit@example.com"], check=True)
+        subprocess.run(["git", "config", "user.name", "streamlit-bot"], check=True)
+        # Disable GPG signing to avoid failures when gpg isn't available
+        subprocess.run(["git", "config", "commit.gpgsign", "false"], check=True)
+
         subprocess.run(["git", "add", "config.json"], check=True)
-        subprocess.run(["git", "commit", "-m", "Update config via Streamlit"], check=True)
-        subprocess.run(["git", "push", remote, branch], check=True)
+        subprocess.run(
+            ["git", "commit", "--no-gpg-sign", "-m", "Update config via Streamlit"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "push", remote, branch],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
     except subprocess.CalledProcessError as exc:
-        st.error(f"Git push failed: {exc}")
+        error_msg = exc.stderr or exc.stdout or str(exc)
+        st.error(f"Git push failed: {error_msg}")
         return False
     return True
 
