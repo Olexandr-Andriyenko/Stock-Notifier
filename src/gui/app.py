@@ -23,15 +23,11 @@ def commit_and_push(token: str | None = None):
         )
         return
 
-    repo = "https://github.com/Olexandr-Andriyenko/Stock-Notifier.git"
     branch = "master"
-
-    repo = "https://github.com/Olexandr-Andriyenko/Stock-Notifier.git"
-    branch = "master"                       
+    remote = f"https://{token}@github.com/Olexandr-Andriyenko/Stock-Notifier.git"           
 
     subprocess.run(["git", "add", "config.json"], check=True)
     subprocess.run(["git", "commit", "-m", "Update config via Streamlit"], check=True)
-    remote = f"https://{token}@{repo}"
     subprocess.run(["git", "push", remote, branch], check=True)
 
 cfg = load_config()
@@ -58,5 +54,5 @@ cfg["threshold_pct"] = st.number_input(
 
 if st.button("Speichern & Pushen"):
     save_config(cfg)
-    commit_and_push()
+    commit_and_push(gh_token)
     st.success("Gespeichert und ins Repo gepusht.")
