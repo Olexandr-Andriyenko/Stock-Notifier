@@ -46,3 +46,6 @@ pytest_cache/
 htmlcov/
 .cache/
 company_cache.json
+
+# Streamlit local state
+.streamlit/
