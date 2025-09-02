@@ -38,6 +38,14 @@ def commit_and_push(token: str | None = None) -> bool:
         subprocess.run(["git", "config", "commit.gpgsign", "false"], check=True)
 
         subprocess.run(["git", "add", "config.json"], check=True)
+
+        diff = subprocess.run(
+            ["git", "diff", "--cached", "--quiet", "--", "config.json"]
+        )
+        if diff.returncode == 0:
+            st.info("Keine Änderungen zum Commit.")
+            return False
+
         subprocess.run(
             ["git", "commit", "--no-gpg-sign", "-m", "Update config via Streamlit"],
             check=True,
