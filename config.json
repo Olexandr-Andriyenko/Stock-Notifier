@@ -10,9 +10,12 @@
     "server": "https://ntfy.sh"
   },
   "tickers": [
-    "AAPL"
+    "AAPL",
+    "O",
+    "WPY.F",
+    "QDVX.DE"
   ],
-  "threshold_pct": 2.0,
+  "threshold_pct": 12.0,
   "state_file": "alert_state.json",
   "market_hours": {
     "enabled": true,
