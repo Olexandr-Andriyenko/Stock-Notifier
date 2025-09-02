@@ -3,7 +3,9 @@ import json
 from pathlib import Path
 import streamlit as st
 import os, subprocess
+from dotenv import load_dotenv
 
+load_dotenv()
 CONFIG_PATH = Path("config.json")
 
 @st.cache_data
@@ -14,21 +16,26 @@ def save_config(cfg: dict):
     CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
     
 
-def commit_and_push(token: str | None = None):
+def commit_and_push(token: str | None = None) -> bool:
     """Commit config changes and push to GitHub."""
     token = token or os.environ.get("GH_TOKEN")
     if not token:
         st.error(
             "Bitte GitHub Token eingeben oder GH_TOKEN als Environment Variable setzen."
         )
-        return
+        return False
 
     branch = "master"
-    remote = f"https://{token}@github.com/Olexandr-Andriyenko/Stock-Notifier.git"           
+    remote = f"https://{token}@github.com/Olexandr-Andriyenko/Stock-Notifier.git"
 
-    subprocess.run(["git", "add", "config.json"], check=True)
-    subprocess.run(["git", "commit", "-m", "Update config via Streamlit"], check=True)
-    subprocess.run(["git", "push", remote, branch], check=True)
+    try:
+        subprocess.run(["git", "add", "config.json"], check=True)
+        subprocess.run(["git", "commit", "-m", "Update config via Streamlit"], check=True)
+        subprocess.run(["git", "push", remote, branch], check=True)
+    except subprocess.CalledProcessError as exc:
+        st.error(f"Git push failed: {exc}")
+        return False
+    return True
 
 cfg = load_config()
 
@@ -54,5 +61,5 @@ cfg["threshold_pct"] = st.number_input(
 
 if st.button("Speichern & Pushen"):
     save_config(cfg)
-    commit_and_push(gh_token)
-    st.success("Gespeichert und ins Repo gepusht.")
+    if commit_and_push(gh_token):
+        st.success("Gespeichert und ins Repo gepusht.")
