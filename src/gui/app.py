@@ -14,10 +14,20 @@ def save_config(cfg: dict):
     CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
     
 
-def commit_and_push():
-    token = os.environ["GH_TOKEN"]
-    repo = "https://github.com/Olexandr-Andriyenko/Stock-Notifier.git"      
-    branch = "master"                            
+def commit_and_push(token: str | None = None):
+    """Commit config changes and push to GitHub."""
+    token = token or os.environ.get("GH_TOKEN")
+    if not token:
+        st.error(
+            "Bitte GitHub Token eingeben oder GH_TOKEN als Environment Variable setzen."
+        )
+        return
+
+    repo = "https://github.com/Olexandr-Andriyenko/Stock-Notifier.git"
+    branch = "master"
+
+    repo = "https://github.com/Olexandr-Andriyenko/Stock-Notifier.git"
+    branch = "master"                       
 
     subprocess.run(["git", "add", "config.json"], check=True)
     subprocess.run(["git", "commit", "-m", "Update config via Streamlit"], check=True)
@@ -27,6 +37,7 @@ def commit_and_push():
 cfg = load_config()
 
 st.title("Konfiguration bearbeiten")
+gh_token = st.sidebar.text_input("GitHub Token", type="password")
 
 cfg["log"]["level"] = st.selectbox(
     "Log-Level",
